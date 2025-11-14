@@ -248,7 +248,10 @@ export default function AdminClientes() {
               className="flex-1 min-w-0 border border-[#8F5400] dark:border-gray-700 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-black dark:focus:ring-white bg-white dark:bg-gray-800 sm:max-w-md"
               placeholder="Buscar por nombre, email o RUT"
               value={buscar}
-              onChange={(e)=>setBuscar(e.target.value)}
+              onChange={(e)=>{
+                const safe = e.target.value.replace(/[^a-zA-Z0-9.@]/g, "");
+                setBuscar(safe)}
+              }
               onKeyDown={(e) => e.key === "Enter" && cargar(1)}
             />
             <Button

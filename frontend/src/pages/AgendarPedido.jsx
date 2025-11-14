@@ -11,7 +11,7 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 export default function AgendarPedido() {
   const navigate = useNavigate();
   const { user, role, userId } = useAuth();
-  const [cart, setCart] = useCart(role, userId); // ✅ Usar el hook
+  const [cart, setCart] = useCart(role, userId);
 
   // === Pasajero público (sin token) ===
   const token = useMemo(() => localStorage.getItem("token"), []);
@@ -259,32 +259,17 @@ export default function AgendarPedido() {
                   <label className="text-sm text-gray-600 dark:text-gray-300">Cantidad</label>
                   <input
                     type="number"
-                    inputMode="decimal"
+                    min="0.5"
+                    step="0.1"
                     value={modalCantidad}
-                    onChange={(e) => {
-                      let raw = e.target.value.replace(/[^0-9.,]/g, "").replace(",", ".");
-                      if (raw === "") {
-                        setModalCantidad("");
-                        setModalError("");
-                        return;
-                      }
-                      const n = Number(raw);
-                      if (Number.isNaN(n)) {
-                        setModalError("Cantidad inválida.");
-                        return;
-                      }
-                      if (modalUnidad === "un") {
-                        const rounded = Math.ceil(n);
-                        if (n !== rounded) setModalError(`Se redondeó a ${rounded} porque "UN" no permite decimales.`);
-                        else setModalError("");
-                        setModalCantidad(String(rounded));
-                      } else {
-                        setModalError("");
-                        setModalCantidad(raw);
-                      }
+                    onChange={e => {
+                      let value = parseFloat(e.target.value);
+                      // Redondear a un decimal y validar mínimo
+                      if (isNaN(value)) value = '';
+                      else if (value < 0.5) value = 0.5;
+                      else value = Math.floor(value * 10) / 10;
+                      setModalCantidad(value);
                     }}
-                    min={modalUnidad === "kg" ? "0.5" : "1"}
-                    step={modalUnidad === "kg" ? "0.5" : "1"}
                     className="w-28 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800"
                   />
                   <select

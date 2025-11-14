@@ -5,7 +5,7 @@ import { FaTrash } from "react-icons/fa6";
 import { useAuth } from "../context/AuthContext";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import { parseError } from "../utils/errores";
+import { parseError, sanitizeInput } from "../utils/errores";
 import { getTomorrowYMD, getMaxDateYMD } from "../utils/fecha"; // ← NUEVO import
 import { fetchJSON } from "../utils/fetch";
 
@@ -148,6 +148,12 @@ export default function AgendarConfirmacion() {
         headers.Authorization = `Bearer ${token}`;
       }
 
+      // Sanitizar inputs antes de armar el payload
+      let safeNombre = sanitizeInput(nombre);
+      let safeEmail = sanitizeInput(email);
+      let safeTelefono = sanitizeInput(telefono);
+      let safeDireccionTxt = sanitizeInput(direccionTxt);
+
       const payloadBase = {
         tipo_entrega: tipoEntrega,
         fecha_entrega: fecha,
@@ -159,14 +165,18 @@ export default function AgendarConfirmacion() {
         })),
       };
 
-      // ----- construir payload según rol -----
       let payload = payloadBase;
       if (role === "cliente") {
         payload = { ...payloadBase, direccion_id: selectedAddressId || null };
       } else {
         payload = {
           ...payloadBase,
-          cliente: { nombre, email, telefono, direccion: direccionTxt || null },
+          cliente: {
+            nombre: safeNombre,
+            email: safeEmail,
+            telefono: safeTelefono,
+            direccion: safeDireccionTxt || null,
+          },
         };
       }
 
@@ -373,7 +383,7 @@ export default function AgendarConfirmacion() {
                   <Input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value.replace(/[^a-zA-Z0-9.@_-]/g, ""))}
                     placeholder="correo@ejemplo.com"
                   />
                 </Field>

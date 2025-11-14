@@ -8,3 +8,9 @@ export function parseError(error) {
     return error?.message || 'Error desconocido';
   }
 }
+
+// Sanitiza cadenas eliminando caracteres potencialmente peligrosos
+export function sanitizeInput(str) {
+  if (typeof str !== "string") return "";
+  return str.trim().replace(/[<>{}[\];$]/g, "");
+}

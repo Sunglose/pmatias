@@ -12,6 +12,12 @@ export default function CrearEditarModal({
   onClose,
   onSubmit,
 }) {
+  // Validación en tiempo real: solo letras, números, espacios, tildes y ñ/Ñ
+  function handleNombreChange(e) {
+    const clean = e.target.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñ0-9\s]/g, "");
+    setNombre(clean);
+  }
+
   return (
     <Modal
       isOpen={isOpen}
@@ -24,9 +30,12 @@ export default function CrearEditarModal({
           <div className="text-xs mb-1 text-gray-600 dark:text-gray-300">Nombre</div>
           <Input
             value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
+            onChange={handleNombreChange}
             placeholder="Nombre del producto"
             className="dark:bg-gray-800 dark:border-gray-700"
+            required
+            minLength={3}
+            maxLength={50}
           />
         </label>
 

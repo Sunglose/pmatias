@@ -8,6 +8,7 @@ import clientesRouter from "./clientes.routes.js";
 import productosRouter from "./productos.routes.js";
 import pedidosRouter from "./pedidos.routes.js";
 import publicRoutes from "./public.routes.js";
+import addressRoutes from "./address.routes.js";
 
 const api = Router();
 
@@ -22,5 +23,6 @@ api.use("/clientes", authRequired, clientesRouter);
 // IMPORTANTE: /pedidos tiene rutas mixtas (públicas y protegidas)
 // Las rutas públicas se definen primero dentro de pedidos.routes.js
 api.use("/pedidos", pedidosRouter);
+api.use("/address", addressRoutes);
 
 export default api;
