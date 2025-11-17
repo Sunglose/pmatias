@@ -10,7 +10,6 @@ export default function AprobarPedidos() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [rows, setRows] = useState([]);
-  const [creatingTest, setCreatingTest] = useState(false);
 
   async function cargar() {
     setLoading(true); setErr("");
