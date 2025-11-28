@@ -1,22 +1,25 @@
+import { Router } from "express";
+import upload from "../lib/upload.js";
+import { authRequired, requireRoles, asyncHandler } from "./auth.js"; // <-- importa authRequired
 import { pool } from "../db.js";
 import fs from "fs/promises";
 import path from "path";
 
-/** Construye URL pública a partir de imagen_path (relativa, ej. 'products/abc.jpg') */
+const router = Router();
+
+// Helpers
 function buildImageURL(req, imagenPath) {
   if (!imagenPath) return null;
   const base = `${req.protocol}://${req.get("host")}`;
   return `${base}/uploads/${imagenPath}`;
 }
-
-/** Devuelve la ruta absoluta del archivo en disco a partir de la ruta relativa guardada en BD */
 function absUploadPath(relPath) {
   return path.resolve("uploads", relPath || "");
 }
 
-/* ========================= Listar CATÁLOGO ========================= */
+// ========================= Listar CATÁLOGO =========================
 // GET /api/productos (solo activos para todos los roles)
-export async function listarProductos(req, res) {
+router.get("/", asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
     `SELECT id, nombre, imagen_path, activo
      FROM productos
@@ -33,11 +36,11 @@ export async function listarProductos(req, res) {
   }));
 
   res.json(out);
-}
+}));
 
-/* ========================= Listar ADMIN ========================= */
+// ========================= Listar ADMIN =========================
 // GET /api/productos/admin (admin ve todos)
-export async function listarProductosAdmin(req, res) {
+router.get("/admin", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
     `SELECT id, nombre, imagen_path, activo
      FROM productos
@@ -53,10 +56,10 @@ export async function listarProductosAdmin(req, res) {
   }));
 
   res.json(out);
-}
+}));
 
-/* ========================= Crear ========================= */
-export async function crearProducto(req, res) {
+// ========================= Crear =========================
+router.post("/", authRequired, requireRoles("admin"), upload.single("imagen"), asyncHandler(async (req, res) => {
   const { nombre } = req.body || {};
   if (!nombre || !String(nombre).trim()) {
     return res.status(400).json({ message: "nombre requerido" });
@@ -79,10 +82,10 @@ export async function crearProducto(req, res) {
   } catch {
     res.status(500).json({ message: "Error creando producto" });
   }
-}
+}));
 
-/* ========================= Actualizar ========================= */
-export async function actualizarProducto(req, res) {
+// ========================= Actualizar =========================
+router.put("/:id", authRequired, requireRoles("admin"), upload.single("imagen"), asyncHandler(async (req, res) => {
   const { id } = req.params;
   const nombre = req.body?.nombre?.trim();
 
@@ -135,10 +138,10 @@ export async function actualizarProducto(req, res) {
   } catch {
     res.status(500).json({ message: "Error actualizando producto" });
   }
-}
+}));
 
-/* ========================= Eliminar ========================= */
-export async function eliminarProducto(req, res) {
+// ========================= Eliminar =========================
+router.delete("/:id", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   const { id } = req.params;
   try {
     const [curRows] = await pool.query(
@@ -162,11 +165,11 @@ export async function eliminarProducto(req, res) {
     }
     res.status(500).json({ message: "Error eliminando producto" });
   }
-}
+}));
 
-/* ========================= Activar / Desactivar ========================= */
+// ========================= Activar / Desactivar =========================
 // PATCH /api/productos/:id/activo { activo?: 0|1|true|false }
-export async function toggleActivo(req, res) {
+router.patch("/:id/activo", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   const { id } = req.params;
   let { activo } = req.body || {};
 
@@ -186,4 +189,6 @@ export async function toggleActivo(req, res) {
   if (r.affectedRows === 0) return res.status(404).json({ message: "Producto no encontrado" });
 
   res.json({ updated: true, activo: nuevoActivo });
-}
+}));
+
+export default router;

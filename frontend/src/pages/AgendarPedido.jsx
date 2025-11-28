@@ -55,7 +55,7 @@ export default function AgendarPedido() {
     setLoading(true); setErr("");
     try {
       if (isPasajero) {
-        const res = await fetch(`${API}/api/public/productos`);
+        const res = await fetch(`${API}/api/productos`);
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setProductos(Array.isArray(data) ? data : []);

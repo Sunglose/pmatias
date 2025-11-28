@@ -61,7 +61,7 @@ export default function CajaConfirmarPin() {
 
     setLoadingPreview(true);
     try {
-      const res = await fetch(`${API}/api/pedidos/pre/${cleanPreId}/preview`, {
+      const res = await fetch(`${API}/api/prepedidos/${cleanPreId}/preview`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -107,13 +107,13 @@ export default function CajaConfirmarPin() {
     try {
       console.log("Enviando confirmación:", { preId: cleanPreId, pin: cleanPin });
       
-      const res = await fetch(`${API}/api/pedidos/pre/${cleanPreId}/confirmar-pin`, {
+      const res = await fetch(`${API}/api/prepedidos/${cleanPreId}/confirmar-pin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ pin: cleanPin, abono: abonoNum }), // ← enviar abono
+        body: JSON.stringify({ pin: cleanPin, abono: abonoNum }),
       });
 
       const body = await safeJson(res);

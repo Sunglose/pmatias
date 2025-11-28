@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaSearch } from "react-icons/fa";
-import { FaTrashCan, FaEye, FaPlus } from "react-icons/fa6";
+import { FaTrashCan, FaEye, FaPlus, FaTruck } from "react-icons/fa6";
 import Button from "../../components/ui/Button";
 import Paginacion from "../../components/ui/Paginacion";
 import { Table } from "../../components/ui/Table";
 import { fetchJSON } from "../../utils/fetch";
 import { parseError } from "../../utils/errores";
-import AddClientForm from "../../components/forms/AddClientForm"; // nuevo import
+import AddClientForm from "../../components/forms/AddClientForm";
+import EditRepartoForm from "../../components/forms/EditRepartoModal";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
@@ -37,6 +38,13 @@ export default function AdminClientes() {
   const [openNuevo, setOpenNuevo] = useState(false);
   const [saving, setSaving] = useState(false);
   const [nuevo, setNuevo] = useState({ nombre: "", local: "", rut: "", email: "", telefono: "", direccion: "" });
+  const [repartoHabilitado, setRepartoHabilitado] = useState(false);
+  const [horariosReparto, setHorariosReparto] = useState([]);
+
+  // Modal Editar Reparto
+  const [openEditarReparto, setOpenEditarReparto] = useState(false);
+  const [clienteReparto, setClienteReparto] = useState(null);
+  const [horariosRepartoEditar, setHorariosRepartoEditar] = useState([]);
 
   // Toast éxito
   const [toastOpen, setToastOpen] = useState(false);
@@ -59,19 +67,16 @@ export default function AdminClientes() {
     setError("");
     try {
       const params = new URLSearchParams({ page: String(pageNum), limit: String(limit) });
-      if (buscar.trim()) params.set("search", buscar.trim());
-      
+      if (buscar.trim()) params.set("buscar", buscar.trim());
       const data = await fetchJSON(`${API}/api/clientes?${params}`);
       const lista = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
       setClientes(lista);
       setPage(pageNum);
 
-      // si el backend trae meta válida, úsala
       if (data?.meta && (data.meta.totalPages || data.meta.total)) {
         const tp = Number(data.meta.totalPages) || Math.ceil(Number(data.meta.total) / limit) || 1;
         setTotalPages(tp);
       } else {
-        // sonda a la siguiente página solo si la actual está “llena”
         if (lista.length < limit) {
           setTotalPages(pageNum);
         } else {
@@ -79,7 +84,7 @@ export default function AdminClientes() {
             page: String(pageNum + 1),
             limit: String(limit),
           });
-          if (buscar.trim()) qsNext.set("search", buscar.trim());
+          if (buscar.trim()) qsNext.set("buscar", buscar.trim());
           const next = await fetchJSON(`${API}/api/clientes?${qsNext}`);
           const nextList = Array.isArray(next?.data) ? next.data : Array.isArray(next) ? next : [];
           setTotalPages(nextList.length > 0 ? pageNum + 1 : pageNum);
@@ -92,7 +97,6 @@ export default function AdminClientes() {
     }
   }
 
-  // Reiniciar al buscar
   useEffect(() => {
     setPage(1);
     setTotalPages(1);
@@ -102,7 +106,6 @@ export default function AdminClientes() {
   useEffect(() => { cargar(1); }, []);
 
   async function crearCliente() {
-    // Validaciones mínimas
     if (!nuevo.nombre || !nuevo.rut || !nuevo.email || !nuevo.direccion) {
       setModalError("Completa todos los campos obligatorios (*)");
       return;
@@ -119,14 +122,28 @@ export default function AdminClientes() {
     setSaving(true);
     setModalError("");
     try {
-      await fetchJSON(`${API}/api/clientes`, {
+      const res = await fetchJSON(`${API}/api/clientes`, {
         method: "POST",
         body: JSON.stringify(nuevo),
       });
+      if (repartoHabilitado && horariosReparto.length > 0) {
+        for (const h of horariosReparto) {
+          if (!h.dia_semana || !h.hora) {
+            setModalError("Completa todos los campos de los horarios de reparto.");
+            return;
+          }
+        }
+        for (const h of horariosReparto) {
+          await fetchJSON(`${API}/api/clientes/${res.id}/horarios-reparto`, {
+            method: "POST",
+            body: JSON.stringify(h),
+          });
+        }
+      }
       showToast("✓ Cliente agregado con éxito");
       setOpenNuevo(false);
       setNuevo({ nombre: "", local: "", rut: "", email: "", telefono: "", direccion: "" });
-      await cargar(1); // Volver a página 1
+      await cargar(1);
     } catch (e) {
       alert(parseError(e));
     } finally {
@@ -151,7 +168,7 @@ export default function AdminClientes() {
         headers,
       });
       if (!res.ok) throw new Error(await res.text());
-      await cargar(page); // Mantener página actual
+      await cargar(page);
     } catch (e) {
       setError(parseError(e));
     }
@@ -185,7 +202,6 @@ export default function AdminClientes() {
         ) : (
           <span className="text-gray-400">—</span>
         )}
-
         <Button
           type="button"
           onClick={() => onDeleteCliente(c.usuario_id)}
@@ -193,6 +209,14 @@ export default function AdminClientes() {
           className="h-8 px-2.5 rounded-lg bg-red-600 hover:bg-red-700"
         >
           <FaTrashCan className="w-4 h-4" />
+        </Button>
+        <Button
+          type="button"
+          onClick={() => openEditarRepartoCliente(c)}
+          title="Editar reparto"
+          className="h-8 px-2.5 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white"
+        >
+          <FaTruck className="w-4 h-4" />
         </Button>
       </div>
     );
@@ -238,6 +262,14 @@ export default function AdminClientes() {
     columns: tableColumns
   };
 
+  async function openEditarRepartoCliente(cliente) {
+    setClienteReparto(cliente);
+    setOpenEditarReparto(true);
+    // Usa cliente.cliente_id para la consulta
+    const horarios = await fetchJSON(`${API}/api/clientes/${cliente.cliente_id}/horarios-reparto`);
+    setHorariosRepartoEditar(horarios);
+  }
+
   return (
     <div className="min-h-screen flex flex-col text-black dark:bg-gray-900 dark:text-white">
       <main className="flex-1">
@@ -267,7 +299,11 @@ export default function AdminClientes() {
             <Button
               type="button"
               className="h-10 w-10 shrink-0 sm:w-auto sm:px-4 md:ml-auto rounded-xl flex items-center justify-center dark:bg-white dark:text-black"
-              onClick={()=>setOpenNuevo(true)}
+              onClick={() => {
+                setOpenNuevo(true);
+                setRepartoHabilitado(false);
+                setHorariosReparto([]);
+              }}
               title="Agregar cliente"
               aria-label="Agregar cliente"
             >
@@ -304,18 +340,23 @@ export default function AdminClientes() {
         </div>
       </main>
 
-      {/* Reemplaza el modal inline por el formulario reutilizable */}
       <AddClientForm
         isOpen={openNuevo}
         onClose={() => {
           setOpenNuevo(false);
           setModalError("");
+          setRepartoHabilitado(false);
+          setHorariosReparto([]);
         }}
         values={nuevo}
         setValues={setNuevo}
         errorMsg={modalError}
         saving={saving}
         onSave={crearCliente}
+        repartoHabilitado={repartoHabilitado}
+        setRepartoHabilitado={setRepartoHabilitado}
+        horariosReparto={horariosReparto}
+        setHorariosReparto={setHorariosReparto}
       />
 
       {toastOpen && (
@@ -337,6 +378,38 @@ export default function AdminClientes() {
           </Button>
         </div>
       )}
+
+      {/* Modal Editar Reparto */}
+      <EditRepartoForm
+        isOpen={openEditarReparto}
+        onClose={() => {
+          setOpenEditarReparto(false);
+          setClienteReparto(null);
+          setHorariosRepartoEditar([]);
+        }}
+        cliente={clienteReparto}
+        horarios={horariosRepartoEditar}
+        setHorarios={setHorariosRepartoEditar}
+        onSave={async () => {
+          // Usa clienteReparto.cliente_id en los endpoints
+          const horariosActuales = await fetchJSON(`${API}/api/clientes/${clienteReparto.cliente_id}/horarios-reparto`);
+          for (const h of horariosActuales) {
+            await fetchJSON(`${API}/api/clientes/${clienteReparto.cliente_id}/horarios-reparto/${h.id}`, {
+              method: "DELETE"
+            });
+          }
+          for (const h of horariosRepartoEditar) {
+            await fetchJSON(`${API}/api/clientes/${clienteReparto.cliente_id}/horarios-reparto`, {
+              method: "POST",
+              body: JSON.stringify(h),
+            });
+          }
+          setOpenEditarReparto(false);
+          setClienteReparto(null);
+          setHorariosRepartoEditar([]);
+          await cargar(1);
+        }}
+      />
     </div>
   );
 }

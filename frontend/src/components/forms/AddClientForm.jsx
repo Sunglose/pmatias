@@ -3,6 +3,7 @@ import Input from "../ui/Input";
 import Button from "../ui/Button";
 import { useAddressAutocomplete } from "../../hooks/useAddress";
 import { formatRut, validateRut } from "../../utils/rut";
+import { useState } from "react";
 
 export default function AddClientForm({
   isOpen,
@@ -14,6 +15,7 @@ export default function AddClientForm({
   onSave,
 }) {
   const { suggestions, onInputChange, setSuggestions } = useAddressAutocomplete();
+  const safeValues = values || { nombre: "", local: "", rut: "", email: "", telefono: "", direccion: "" };
 
   function handleNombreChange(e) {
     const clean = e.target.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñ\s]/g, "");
@@ -26,13 +28,11 @@ export default function AddClientForm({
   }
 
   function handleRutChange(e) {
-    // Permite solo números y k/K, y aplica formato
     const clean = e.target.value.replace(/[^0-9kK]/g, "");
     setValues({ ...values, rut: formatRut(clean) });
   }
 
   function handleEmailChange(e) {
-    // Solo letras, números, puntos, guion bajo, guion y @
     const clean = e.target.value.replace(/[^a-zA-Z0-9.@_-]/g, "");
     setValues({ ...values, email: clean });
   }
@@ -48,14 +48,14 @@ export default function AddClientForm({
   }
 
   return (
-    <Modal isOpen={isOpen} title="Agregar Cliente" onClose={onClose}>
+    <Modal isOpen={isOpen} title="Agregar cliente" onClose={onClose}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="flex flex-col gap-1">
           <span className="text-sm text-gray-600 dark:text-gray-300">
             Nombre <span className="text-red-600">*</span>
           </span>
           <Input
-            value={values.nombre}
+            value={safeValues.nombre}
             onChange={handleNombreChange}
             required
             minLength={3}
@@ -66,7 +66,7 @@ export default function AddClientForm({
         <label className="flex flex-col gap-1">
           <span className="text-sm text-gray-600 dark:text-gray-300">Local</span>
           <Input
-            value={values.local}
+            value={safeValues.local}
             onChange={handleLocalChange}
             className="dark:bg-gray-800 dark:border-gray-700"
           />
@@ -77,17 +77,17 @@ export default function AddClientForm({
             RUT <span className="text-red-600">*</span>
           </span>
           <Input
-            value={values.rut}
+            value={safeValues.rut}
             onChange={handleRutChange}
             placeholder="Ej: 12345678-9 o 1234567-8"
             maxLength={10}
             required
             className="dark:bg-gray-800 dark:border-gray-700"
           />
-          {values.rut && !/^\d{7,8}-[0-9kK]$/.test(values.rut) && (
+          {safeValues.rut && !/^\d{7,8}-[0-9kK]$/.test(safeValues.rut) && (
             <div className="text-red-600 text-xs mt-1">Formato: 7 u 8 dígitos, guion y DV</div>
           )}
-          {values.rut && /^\d{7,8}-[0-9kK]$/.test(values.rut) && !validateRut(values.rut) && (
+          {safeValues.rut && /^\d{7,8}-[0-9kK]$/.test(safeValues.rut) && !validateRut(safeValues.rut) && (
             <div className="text-red-600 text-xs mt-1">RUT inválido</div>
           )}
         </label>
@@ -98,7 +98,7 @@ export default function AddClientForm({
           </span>
           <Input
             type="email"
-            value={values.email}
+            value={safeValues.email}
             onChange={handleEmailChange}
             required
             placeholder="correo@ejemplo.com"
@@ -114,7 +114,7 @@ export default function AddClientForm({
             type="tel"
             inputMode="numeric"
             maxLength={9}
-            value={values.telefono}
+            value={safeValues.telefono}
             onChange={handleTelefonoChange}
             required
             placeholder="987654321"
@@ -128,7 +128,7 @@ export default function AddClientForm({
           </span>
           <div style={{ position: "relative" }}>
             <Input
-              value={values.direccion}
+              value={safeValues.direccion}
               onChange={handleDireccionChange}
               required
               minLength={5}
@@ -151,7 +151,7 @@ export default function AddClientForm({
                 }}
               >
                 {suggestions.map((s) => {
-                  const userInput = values.direccion.trim();
+                  const userInput = safeValues.direccion.trim();
                   const match = userInput.match(/(.+?)(?:\s*#\s*(\d+))?$/i);
                   let customAddress = s.display_name;
                   if (match && match[2]) {
@@ -186,7 +186,7 @@ export default function AddClientForm({
           Cancelar
         </Button>
         <Button onClick={onSave} disabled={saving}>
-          {saving ? "Guardando…" : "Crear cliente"}
+          {saving ? "Guardando..." : "Crear cliente"}
         </Button>
       </div>
     </Modal>

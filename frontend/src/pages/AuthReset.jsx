@@ -10,7 +10,7 @@ export default function AuthReset() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-
+  
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
@@ -25,7 +25,7 @@ export default function AuthReset() {
     }
     setLoading(true);
     try {
-      await resetPassword(token, password); // <-- Llama al endpoint real
+      await resetPassword(token, password);
       setSuccess("¡Contraseña restablecida correctamente! Ahora puedes iniciar sesión.");
     } catch (err) {
       setError("No se pudo restablecer la contraseña.");

@@ -1,10 +1,15 @@
+import { Router } from "express";
+import { authRequired, asyncHandler } from "./auth.js";
 import { pool } from "../db.js";
 import bcrypt from "bcrypt";
 
-/**
- * GET /api/account/me
- */
-export const profile = async (req, res) => {
+const router = Router();
+
+// Todas requieren login
+router.use(authRequired);
+
+// ================= PERFIL =================
+router.get("/me", asyncHandler(async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "No autenticado" });
@@ -25,58 +30,34 @@ export const profile = async (req, res) => {
   } catch (e) {
     return res.status(500).json({ message: "Error obteniendo el perfil" });
   }
-};
+}));
 
-
-/**
- * PUT /api/account/profile
- * Actualiza campos editables: email (usuarios), local y telefono (clientes).
- * body: { email, local?, telefono? }
- */
-export const updateProfile = async (req, res) => {
+router.get("/profile", asyncHandler(async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "No autenticado" });
 
-    let { email, local, telefono } = req.body || {};
-    email = (email || "").trim().toLowerCase();
-    local = (local ?? "").trim();
-    telefono = (telefono ?? "").trim();
-
-    if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
-      return res.status(400).json({ message: "Email inválido" });
-    }
-
-    // Verificar que email no esté en uso por otro usuario
-    const [eRows] = await pool.query(
-      "SELECT id FROM usuarios WHERE email = ? AND id <> ? LIMIT 1",
-      [email, userId]
-    );
-    if (eRows.length) {
-      return res.status(409).json({ message: "Ese email ya está en uso" });
-    }
-
-    // Actualizar email
-    await pool.query("UPDATE usuarios SET email = ? WHERE id = ?", [email, userId]);
-
-    // Actualizar datos cliente si existe
-    await pool.query(
-      "UPDATE clientes SET local = ?, telefono = ? WHERE usuario_id = ?",
-      [local || null, telefono || null, userId]
+    const [rows] = await pool.query(
+      `SELECT 
+      u.id, u.email, u.rol,
+      c.id AS cliente_id,         -- <--- AGREGAR ESTA LÍNEA
+      c.nombre, c.local, c.telefono, c.direccion, c.rut
+      FROM usuarios u
+      LEFT JOIN clientes c ON c.usuario_id = u.id
+      WHERE u.id = ?
+      LIMIT 1`,
+      [userId]
     );
 
-    return res.json({ updated: true });
+    if (!rows.length) return res.status(404).json({ message: "Usuario no encontrado" });
+    return res.json(rows[0]);
   } catch (e) {
-    return res.status(500).json({ message: "Error actualizando perfil" });
+    return res.status(500).json({ message: "Error obteniendo el perfil" });
   }
-};
+}));
 
-/**
- * PUT /api/account/password
- * Cambiar contraseña propia SIN pedir la actual.
- * body: { new_password }
- */
-export const changePassword = async (req, res) => {
+// ================= PASSWORD =================
+router.put("/password", asyncHandler(async (req, res) => {
   try {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: "No autenticado" });
@@ -105,14 +86,10 @@ export const changePassword = async (req, res) => {
   } catch (e) {
     return res.status(500).json({ message: "Error cambiando contraseña" });
   }
-};
+}));
 
-/* ============================ DIRECCIONES ============================ */
-/**
- * GET /api/account/addresses
- * Lista direcciones del usuario.
- */
-export const listAddresses = async (req, res) => {
+// ================= DIRECCIONES =================
+router.get("/addresses", asyncHandler(async (req, res) => {
   try {
     const userId = req.user?.id;
     const [rows] = await pool.query(
@@ -123,14 +100,9 @@ export const listAddresses = async (req, res) => {
   } catch (e) {
     res.status(500).json({ message: "Error listando direcciones" });
   }
-};
+}));
 
-/**
- * POST /api/account/addresses
- * Crea nueva dirección (máx 5). Si no hay principal, esta se marca principal.
- * body: { texto }
- */
-export const createAddress = async (req, res) => {
+router.post("/addresses", asyncHandler(async (req, res) => {
   try {
     const userId = req.user?.id;
     const { texto } = req.body || {};
@@ -159,13 +131,9 @@ export const createAddress = async (req, res) => {
   } catch (e) {
     res.status(500).json({ message: "Error creando dirección" });
   }
-};
+}));
 
-/**
- * PUT /api/account/addresses/:id
- * Actualiza el texto de una dirección propia.
- */
-export const updateAddress = async (req, res) => {
+router.put("/addresses/:id", asyncHandler(async (req, res) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
@@ -182,13 +150,9 @@ export const updateAddress = async (req, res) => {
   } catch (e) {
     res.status(500).json({ message: "Error actualizando dirección" });
   }
-};
+}));
 
-/**
- * DELETE /api/account/addresses/:id
- * Elimina una dirección propia. Si era principal, intenta promover otra como principal.
- */
-export const deleteAddress = async (req, res) => {
+router.delete("/addresses/:id", asyncHandler(async (req, res) => {
   const conn = await pool.getConnection();
   await conn.beginTransaction();
   try {
@@ -230,13 +194,9 @@ export const deleteAddress = async (req, res) => {
   } finally {
     conn.release();
   }
-};
+}));
 
-/**
- * PATCH /api/account/addresses/:id/default
- * Marca una dirección como principal.
- */
-export const setDefaultAddress = async (req, res) => {
+router.patch("/addresses/:id/default", asyncHandler(async (req, res) => {
   const conn = await pool.getConnection();
   await conn.beginTransaction();
   try {
@@ -269,4 +229,19 @@ export const setDefaultAddress = async (req, res) => {
   } finally {
     conn.release();
   }
-};
+}));
+
+// ================= HORARIOS REPARTO =================
+router.get("/horarios-reparto", asyncHandler(async (req, res) => {
+  const userId = req.user?.id;
+  const [rows] = await pool.query(
+    `SELECT id, hora
+     FROM cliente_horarios_reparto
+     WHERE cliente_id = (SELECT id FROM clientes WHERE usuario_id = ? LIMIT 1)
+     ORDER BY hora`,
+    [userId]
+  );
+  res.json(rows);
+}));
+
+export default router;

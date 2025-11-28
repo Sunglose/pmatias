@@ -14,7 +14,7 @@ export default function AprobarPedidos() {
   async function cargar() {
     setLoading(true); setErr("");
     try {
-      const data = await fetchJSON(`${API}/api/pedidos/aprobar`);
+      const data = await fetchJSON(`${API}/api/prepedidos/pendientes-aprobacion`);
       setRows(Array.isArray(data) ? data : []);
     } catch (e) {
       setErr(parseError(e));
@@ -25,7 +25,7 @@ export default function AprobarPedidos() {
 
   async function aprobar(id) {
     try {
-      await fetchJSON(`${API}/api/pedidos/pre/${id}/aprobar?notify=1`, { method: "POST" });
+      await fetchJSON(`${API}/api/prepedidos/${id}/aprobar?notify=1`, { method: "POST" });
       cargar();
     } catch (e) {
       alert(parseError(e));
@@ -35,7 +35,7 @@ export default function AprobarPedidos() {
   async function rechazar(id) {
     const motivo = prompt("Ingresa el motivo del rechazo (opcional):");
     try {
-      await fetchJSON(`${API}/api/pedidos/pre/${id}/rechazar?notify=1`, {
+      await fetchJSON(`${API}/api/prepedidos/${id}/rechazar?notify=1`, {
         method: "POST",
         body: JSON.stringify({ motivo: motivo || "" }),
       });
@@ -62,6 +62,22 @@ export default function AprobarPedidos() {
         <span>
           {p.fecha_entrega} {p.hora_entrega || ''}
         </span>
+      )
+    },
+    {
+      header: 'Productos',
+      cell: (p) => (
+        <ul className="list-disc pl-4">
+          {Array.isArray(p.items) && p.items.length > 0 ? (
+            p.items.map((it, idx) => (
+              <li key={idx}>
+                {it.cantidad} {it.unidad.toUpperCase()} {it.producto}
+              </li>
+            ))
+          ) : (
+            <li className="text-gray-400">Sin productos</li>
+          )}
+        </ul>
       )
     },
     {

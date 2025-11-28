@@ -4,10 +4,12 @@ import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import path from "path";
+
+import authRouter from "./routes/auth.js";
+
 import { fileURLToPath } from "url";
 import apiRouter from "./routes/index.routes.js";
 import { notFound, errorHandler } from "./middlewares/errors.middleware.js";
-import { ensurePrepedidoSchema } from "./utils/schema.js";
 
 dotenv.config();
 
@@ -21,7 +23,7 @@ const uploadsDir = path.join(__dirname, "..", "uploads");
 // Helmet: permite embebidos cross-origin (imágenes)
 app.use(
   helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }, // <- clave
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
 
@@ -44,14 +46,9 @@ app.use(
   })
 );
 
-// Asegurar esquema mínimo requerido (tablas de prepedidos)
-await ensurePrepedidoSchema().catch((e) => {
-  console.error("[DB Schema] Error asegurando esquema:", e?.message || e);
-});
-
 // API principal
 app.use("/api", apiRouter);
-
+app.use("/auth", authRouter);
 // 404 y error handler
 app.use(notFound);
 app.use(errorHandler);

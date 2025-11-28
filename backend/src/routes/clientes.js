@@ -1,21 +1,13 @@
+import { Router } from "express";
+import { authRequired, requireRoles, asyncHandler } from "./auth.js";
 import { pool } from "../db.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 
-/**
- * Clave de cifrado para guardar la contraseña temporal encriptada (AES-256-GCM).
- * Debe ser un hex de 32 bytes (64 chars). Ejemplo para .env:
- *   TEMP_PASS_KEY=2d3f4c... (64 hex chars)
- */
-const ENC_KEY = Buffer.from(
-  process.env.TEMP_PASS_KEY || "0000000000000000000000000000000000000000000000000000000000000000",
-  "hex"
-);
-const TEMP_PASS_TTL_DAYS = parseInt(process.env.TEMP_PASS_TTL_DAYS || "7", 10);
+const router = Router();
 
-/* ========================= Listar ========================= */
-// GET /api/admin/clientes?buscar=&page=1&limit=20
-export async function listarClientes(req, res) {
+// ====== SOLO ADMIN ======
+router.get("/", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   const { buscar = "", page = 1, limit = 20 } = req.query;
   const lim = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
   const off = (Math.max(parseInt(page, 10) || 1, 1) - 1) * lim;
@@ -54,11 +46,9 @@ export async function listarClientes(req, res) {
   );
 
   res.json(rows);
-}
+}));
 
-/* ========================= Crear ========================= */
-// POST /api/admin/clientes
-export async function crearCliente(req, res) {
+router.post("/", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   let { nombre, local, rut, email, telefono, direccion } = req.body || {};
   if (!nombre || !rut || !email || !direccion) {
     return res.status(400).json({ message: "nombre, rut, email y direccion son requeridos" });
@@ -112,11 +102,9 @@ export async function crearCliente(req, res) {
   } finally {
     conn.release();
   }
-}
+}));
 
-/* ========================= Eliminar (cliente + usuario) ========================= */
-// DELETE /api/admin/clientes/:id   (id = usuario_id)
-export async function deleteClienteYUsuario(req, res) {
+router.delete("/:id", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   const { id } = req.params; // usuario_id
   try {
     // Borrar usuario (por FK ON DELETE CASCADE, borra cliente)
@@ -129,11 +117,9 @@ export async function deleteClienteYUsuario(req, res) {
     }
     res.status(500).json({ message: "Error eliminando" });
   }
-}
+}));
 
-/* ========================= Ver password temporal ========================= */
-// GET /api/admin/clientes/:id/temp-password  (id = usuario_id)
-export async function obtenerTempPasswordCliente(req, res) {
+router.get("/:id/temp-password", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   const { id } = req.params;
   try {
     const [rows] = await pool.query(
@@ -159,7 +145,41 @@ export async function obtenerTempPasswordCliente(req, res) {
   } catch {
     res.status(500).json({ message: "Error obteniendo contraseña temporal" });
   }
-}
+}));
+
+// ====== ADMIN Y CLIENTE PROPIETARIO ======
+router.get("/:id/horarios-reparto", authRequired, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  // Permite solo si es admin o si el usuario es dueño del cliente
+  if (
+    req.user.rol !== "admin" &&
+    !(req.user.rol === "cliente" && String(id) === String(req.user.cliente_id))
+  ) {
+    return res.status(403).json({ error: "Acceso denegado" });
+  }
+  const [rows] = await pool.query(
+    "SELECT id, hora FROM cliente_horarios_reparto WHERE cliente_id = ? ORDER BY hora",
+    [id]
+  );
+  res.json(rows);
+}));
+
+router.post("/:id/horarios-reparto", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { hora } = req.body;
+  if (!hora) return res.status(400).json({ message: "Hora requerida" });
+  await pool.query(
+    "INSERT INTO cliente_horarios_reparto (cliente_id, hora) VALUES (?, ?)",
+    [id, hora]
+  );
+  res.status(201).json({ ok: true });
+}));
+
+router.delete("/:id/horarios-reparto/:horarioId", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
+  const { horarioId } = req.params;
+  await pool.query("DELETE FROM cliente_horarios_reparto WHERE id = ?", [horarioId]);
+  res.json({ deleted: true });
+}));
 
 /* ========================= Helpers ========================= */
 function generarPasswordTemporal() {
@@ -183,3 +203,5 @@ function decryptTempPassword(enc, iv, tag) {
   const dec = Buffer.concat([decipher.update(enc), decipher.final()]);
   return dec.toString("utf8");
 }
+
+export default router;

@@ -85,8 +85,7 @@ export default function AgendarConfirmacion() {
           fetchJSON(`${API}/api/account/profile`),
           fetchJSON(`${API}/api/account/addresses`),
         ]);
-
-        setProfile(p || {});
+        setProfile(p || {}); // <-- aquí debe estar cliente_id
         setAddresses(Array.isArray(a) ? a : []);
 
         if (p) {
@@ -180,11 +179,13 @@ export default function AgendarConfirmacion() {
         };
       }
 
+      console.log("Payload enviado:", payload);
+
       // ***** Rutas según sea pasajero o autenticado *****
       // Pasajero -> PREPEDIDO público (sin token)
       // Autenticado -> PEDIDO normal (con token + notify)
       const createUrl = isPasajero
-        ? `${API}/api/pedidos/pre`
+        ? `${API}/api/prepedidos/public`
         : `${API}/api/pedidos?notify=1`;
 
       // Crear (pre)pedido
@@ -261,6 +262,24 @@ export default function AgendarConfirmacion() {
   const horas = Array.from({ length: 14 }, (_, i) => String(i + 6).padStart(2, "0")); // 06..19
   const minutos = ["00", "15", "30", "45"];
 
+  // ==================== NUEVO: CARGAR HORARIOS DE REPARTO ====================
+  const [horariosReparto, setHorariosReparto] = useState([]);
+
+  useEffect(() => {
+    async function cargarHorarios() {
+      if (profile?.cliente_id) {
+        const horarios = await fetchJSON(
+          `${API}/api/account/horarios-reparto`
+        );
+        setHorariosReparto(horarios);
+      }
+    }
+    cargarHorarios();
+  }, [profile?.cliente_id]);
+
+  // Solo muestra "Reparto" si hay horarios asignados
+  const puedeReparto = horariosReparto.length > 0;
+
   return (
     <div className="min-h-screen flex flex-col text-black dark:bg-gray-900 dark:text-white">
       <main className="flex-1 w-full max-w-7xl mx-auto px-2 sm:px-4 py-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
@@ -277,7 +296,7 @@ export default function AgendarConfirmacion() {
                 />
                 <span>Retiro en local</span>
               </label>
-              {role === "cliente" && (
+              {role === "cliente" && puedeReparto && (
                 <label className="inline-flex items-center gap-2">
                   <Input
                     type="radio"
@@ -299,28 +318,48 @@ export default function AgendarConfirmacion() {
                 type="date"
                 value={fecha}
                 min={tomorrowYMD}
-                max={maxDateYMD} // ← CAMBIO: ahora permite hasta 7 días desde mañana
+                max={maxDateYMD}
                 onChange={(e) => setFecha(e.target.value)}
               />
               <span className="hidden sm:inline-block w-px h-6 bg-gray-300 dark:bg-gray-700 mx-2" />
-              <div className="flex items-center gap-2">
+              {/* CAMBIO: Si es reparto y cliente, muestra listbox de horarios */}
+              {role === "cliente" && tipoEntrega === "reparto" && puedeReparto ? (
                 <select
                   className="border border-[#8F5400] dark:border-gray-700 rounded-lg px-2 py-2 bg-white dark:bg-gray-800"
-                  value={hora}
-                  onChange={(e) => setHora(e.target.value)}
+                  value={`${hora}:${min}`}
+                  onChange={e => {
+                    const [h, m] = e.target.value.split(":");
+                    setHora(h);
+                    setMin(m);
+                  }}
                 >
-                  {horas.map((h) => <option key={h} value={h}>{h}</option>)}
+                  <option value="">Selecciona horario de reparto</option>
+                  {horariosReparto.map(h => (
+                    <option key={h.id} value={h.hora.slice(0,5)}>
+                      {h.hora.slice(0,5)}
+                    </option>
+                  ))}
                 </select>
-                <span className="text-sm text-gray-500 dark:text-gray-400">hrs</span>
-                <select
-                  className="border border-[#8F5400] dark:border-gray-700 rounded-lg px-2 py-2 bg-white dark:bg-gray-800"
-                  value={min}
-                  onChange={(e) => setMin(e.target.value)}
-                >
-                  {minutos.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
-                <span className="text-sm text-gray-500 dark:text-gray-400">mins</span>
-              </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <select
+                    className="border border-[#8F5400] dark:border-gray-700 rounded-lg px-2 py-2 bg-white dark:bg-gray-800"
+                    value={hora}
+                    onChange={(e) => setHora(e.target.value)}
+                  >
+                    {horas.map((h) => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">hrs</span>
+                  <select
+                    className="border border-[#8F5400] dark:border-gray-700 rounded-lg px-2 py-2 bg-white dark:bg-gray-800"
+                    value={min}
+                    onChange={(e) => setMin(e.target.value)}
+                  >
+                    {minutos.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">mins</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -420,7 +459,7 @@ export default function AgendarConfirmacion() {
           {/* Aviso de aprobación para pasajero */}
           {requiereAprob && (
             <div className="border border-amber-600/40 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 text-sm">
-              Este pedido necesita aprobación. Te avisaremos por correo o WhatsApp cuando esté listo.
+              Este pedido necesita aprobación. Te avisaremos por correo cuando esté listo.
             </div>
           )}
         </section>
@@ -481,4 +520,16 @@ function ReadRow({ label, value }) {
       </div>
     </div>
   );
+}
+
+// Agrega esta función utilitaria al final del archivo:
+function getDiaSemana(ymd) {
+  // ymd: "YYYY-MM-DD"
+  const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  const d = new Date(ymd);
+  return dias[d.getDay()];
+}
+
+function normalizaDia(dia) {
+  return String(dia).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }

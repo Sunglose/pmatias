@@ -47,16 +47,13 @@ export default function AddressModal({
               }}
             >
               {suggestions.map((s) => {
-                // Extrae el número de casa del input original si existe
                 const userInput = addrText.trim();
                 const match = userInput.match(/(.+?)(?:\s*#\s*(\d+))?$/i);
                 let customAddress = s.display_name;
                 if (match && match[2]) {
-                  // Si el usuario escribió un número (#5788), insértalo después del nombre de la calle
                   const [street, ...rest] = s.display_name.split(",");
                   customAddress = `${street.trim()} #${match[2]},${rest.join(",")}`;
                 }
-                // Tomar solo calle, número y ciudad
                 const parts = customAddress.split(",").map(p => p.trim());
                 const shortSuggestion = [parts[0], parts[2]].filter(Boolean).join(", ");
                 return (
@@ -64,7 +61,7 @@ export default function AddressModal({
                     key={s.place_id}
                     style={{ padding: "8px", cursor: "pointer" }}
                     onClick={() => {
-                      setAddrText(shortSuggestion); // ← ahora se añade solo lo mostrado
+                      setAddrText(shortSuggestion);
                       setSuggestions([]);
                     }}
                   >

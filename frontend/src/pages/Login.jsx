@@ -20,14 +20,22 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await loginRequest(email, password);
+      console.log("Login response:", data);
       login(data);
       const role = String(data?.user?.rol || "cliente").toLowerCase();
       const base = role === "admin" ? "/admin" : role === "cajera" ? "/cajera" : "/cliente";
       navigate(base, { replace: true });
     } catch (err) {
-      const msg = err?.response?.data?.message || parseError(err) || "Error al iniciar sesión.";
-      // Mensaje claro para credenciales
-      setError(err?.response?.status === 401 ? "Correo o contraseña incorrectos." : msg);
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        parseError(err) ||
+        "Error al iniciar sesión.";
+      setError(
+        err?.response?.status === 401
+          ? "Correo o contraseña incorrectos."
+          : msg
+      );
     } finally {
       setLoading(false);
     }
@@ -147,7 +155,7 @@ return (
 
               <div className="text-center">
                 <Link
-                  to="/recuperar-password" 
+                  to="/auth/olvido" 
                   className="text-sm font-medium text-gray-600 hover:underline dark:text-gray-400"
                 >
                   ¿Olvidaste tu contraseña?

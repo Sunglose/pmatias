@@ -1,7 +1,6 @@
 // src/services/notifications.service.js
 import { pool } from "../db.js";
 import { sendEmail } from "./mailer.service.js";
-import { toE164CL, twWaSendText } from "./wsp.service.js";
 import { fechaProgramadaLegible } from "../utils/fecha.js";
 import { enviarConfirmacionPedido } from "./mailer.service.js";
 
@@ -47,35 +46,19 @@ export async function notificarPedidoPorId(pedidoId, { asuntoEmail, textoWaPrefi
   const matchAbono = obs.match(/Abono\s+pasajero:\s*\$?\s*([0-9]+)/i);
   const abono = matchAbono ? parseInt(matchAbono[1], 10) : null;
 
-  console.log("📧 Datos para email:");
-  console.log("  - observaciones:", obs);
-  console.log("  - abono extraído:", abono);
-  console.log("  - fecha_iso:", pedido.fecha_iso);
-  console.log("  - hora:", pedido.hora);
-
   // 4) Email
   if (pedido.cliente_email) {
     await enviarConfirmacionPedido({
       para: pedido.cliente_email,
       clienteNombre: pedido.cliente_nombre,
       pedidoId,
-      fecha: pedido.fecha_iso, // ← FIX: cambiar de pedido.fecha a pedido.fecha_iso
+      fecha: pedido.fecha_iso, 
       hora: pedido.hora,
       modalidad: pedido.tipo_entrega === "reparto" ? "Reparto a domicilio" : "Retiro en local",
       direccion: pedido.direccion_entrega || null,
       items,
-      abono // ← Incluir abono
+      abono
     });
-  }
-
-  // 5) WhatsApp (si hay)
-  const fechaStr = fechaProgramadaLegible(pedido.fecha_iso, pedido.hora);
-  const modalidad = pedido.tipo_entrega === "reparto" ? "Reparto a domicilio" : "Retiro en local";
-  const num = pedido.cliente_telefono ? toE164CL(pedido.cliente_telefono) : null;
-  if (num) {
-    const prefix = textoWaPrefix || "tu pedido";
-    const wa = `Hola ${pedido.cliente_nombre || "cliente"}: ${prefix} #${pedido.id} fue confirmado para ${fechaStr}. Modalidad: ${modalidad}.`;
-    try { await twWaSendText(num, wa); } catch (e) { console.warn("[Twilio WA] No se pudo enviar:", e?.message || e); }
   }
 
   return true;

@@ -16,6 +16,8 @@ import AdminProductos from "./pages/p_admin/AdminProductos";
 import AdminAprobar from "./pages/p_admin/AdminAprobar.jsx";
 
 import Login from "./pages/Login";
+import AuthOlvido from "./pages/AuthOlvido";
+import AuthReset from "./pages/AuthReset";
 import AgendarPedido from "./pages/AgendarPedido";
 import AgendarConfirmacion from "./pages/AgendarConfirmacion.jsx";
 import HistorialPedidos from "./pages/HistorialPedidos.jsx";
@@ -60,8 +62,17 @@ export default function App() {
 
           <Route path="/pin/:id" element={<PinPedido />} />
 
-          {/* Login sigue siendo público */}
-          <Route path="/login" element={<Login />} />
+          {/* redirigir /login -> /auth/login */}
+          <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+
+          {/* ===== AUTENTICACIÓN (anidada en /auth) ===== */}
+          <Route path="/auth" >
+            <Route index element={<Navigate to="login" replace />} />
+            <Route path="login" element={<Login />} />
+            <Route path="olvido" element={<AuthOlvido />} />
+            <Route path="reset" element={<AuthReset />} />
+            <Route path="reset/:token" element={<AuthReset />} />
+          </Route>
 
           {/* ===== RUTAS PROTEGIDAS (CLIENTE / CAJERA / ADMIN) ===== */}
           <Route element={<ProtectedRoute/>}>
