@@ -1,16 +1,17 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { FiLock } from "react-icons/fi";
-import { resetPassword } from "../services/api"; // <-- Importa la función
+import { resetPassword } from "../services/api";
 
 export default function AuthReset() {
-  const { token } = useParams(); // Si usas /auth/reestablecer/:token
+  const { token } = useParams();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
-  
+  const navigate = useNavigate();
+
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
@@ -26,7 +27,10 @@ export default function AuthReset() {
     setLoading(true);
     try {
       await resetPassword(token, password);
-      setSuccess("¡Contraseña restablecida correctamente! Ahora puedes iniciar sesión.");
+      setSuccess("¡Contraseña restablecida correctamente! Redirigiendo al inicio de sesión...");
+      setTimeout(() => {
+        navigate("/auth/login");
+      }, 2000); // redirige después de 2 segundos
     } catch (err) {
       setError("No se pudo restablecer la contraseña.");
     } finally {

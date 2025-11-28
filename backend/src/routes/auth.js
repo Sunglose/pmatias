@@ -154,7 +154,7 @@ router.post("/request-password-reset", async (req, res) => {
     if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
     const token = await createPasswordResetToken(user.id);
 
-    const resetUrl = `${process.env.CLIENT_ORIGIN || "http://localhost:5173"}/auth/restablecer/${token}`;
+    const resetUrl = `${process.env.CLIENT_ORIGIN || "http://localhost:5173"}/auth/reset/${token}`;
 
     const { subject, html } = passwordResetTemplate({ resetUrl });
     await sendEmail({ to: email, subject, html });

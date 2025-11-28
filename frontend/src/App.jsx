@@ -44,7 +44,6 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           {/* ===== RUTAS PÚBLICAS (PASAJERO SIN LOGIN) ===== */}
-          {/* Dejo la raíz al kiosco/QR para que el pasajero entre directo */}
           <Route path="/" element={<AppShell title="Panadería Matías" />}>
             <Route
               path="/"
@@ -61,8 +60,7 @@ export default function App() {
           </Route>
 
           <Route path="/pin/:id" element={<PinPedido />} />
-
-          {/* redirigir /login -> /auth/login */}
+          
           <Route path="/login" element={<Navigate to="/auth/login" replace />} />
 
           {/* ===== AUTENTICACIÓN (anidada en /auth) ===== */}
