@@ -1,4 +1,3 @@
-// src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/AuthContext";
@@ -63,7 +62,7 @@ export default function App() {
           
           <Route path="/login" element={<Navigate to="/auth/login" replace />} />
 
-          {/* ===== AUTENTICACIÓN (anidada en /auth) ===== */}
+          {/* ===== AUTENTICACIÓN ===== */}
           <Route path="/auth" >
             <Route index element={<Navigate to="login" replace />} />
             <Route path="login" element={<Login />} />
@@ -76,7 +75,6 @@ export default function App() {
           <Route element={<ProtectedRoute/>}>
             {/* CLIENTE */}
             <Route path="/cliente" element={<AppShell title="Panadería Matías" />}>
-              {/* index del cliente → su propia pantalla de agendar */}
               <Route path="/cliente" element={<AgendarPedido />} />
               <Route path="/cliente/agendar/confirmacion" element={<AgendarConfirmacion />} />
               <Route path="/cliente/pedidos" element={<ClientePedidos />} />
@@ -105,7 +103,7 @@ export default function App() {
             <Route path="/403" element={<Forbidden />} />
           </Route>
 
-          {/* ===== 404 GLOBAL (para públicas y protegidas) ===== */}
+          {/* ===== 404 ===== */}
           <Route path="*" element={<ErrorNotFound />} />
         </Routes>
       </BrowserRouter>

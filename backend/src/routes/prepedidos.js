@@ -9,9 +9,7 @@ import { requireRoles, authRequired, asyncHandler } from "./auth.js";
 
 const router = Router();
 
-/* ============================================================================ */
-/* CREAR PRE-PEDIDO PÚBLICO (PASAJEROS SIN LOGIN)                               */
-/* ============================================================================ */
+/* CREAR PRE-PEDIDO PÚBLICO (PASAJEROS SIN LOGIN)  */
 export const crearPrepedidoPublico = asyncHandler(async (req, res) => {
   const {
     tipo_entrega, fecha_entrega, hora_entrega,
@@ -115,9 +113,7 @@ export const crearPrepedidoPublico = asyncHandler(async (req, res) => {
 
 router.post("/public", crearPrepedidoPublico);
 
-/* ============================================================================ */
-/* CONFIRMAR PRE-PEDIDO POR PIN (CAJERA/ADMIN)                                  */
-/* ============================================================================ */
+/* CONFIRMAR PRE-PEDIDO POR PIN (CAJERA/ADMIN) */
 router.post("/:preId/confirmar-pin", authRequired, requireRoles("admin", "cajera"), asyncHandler(async (req, res) => {
   const { preId } = req.params;
   const { pin, abono } = req.body || {};
@@ -220,9 +216,7 @@ router.post("/:preId/confirmar-pin", authRequired, requireRoles("admin", "cajera
   }
 }));
 
-/* ============================================================================ */
-/* LISTAR PRE-PEDIDOS PENDIENTES DE APROBACIÓN                                  */
-/* ============================================================================ */
+/* LISTAR PRE-PEDIDOS PENDIENTES DE APROBACIÓN */
 router.get("/pendientes-aprobacion", authRequired, requireRoles("admin"), asyncHandler(async (_req, res) => {
   try {
     const [rows] = await pool.query(
@@ -237,7 +231,6 @@ router.get("/pendientes-aprobacion", authRequired, requireRoles("admin"), asyncH
       ORDER BY fecha_entrega ASC, hora_entrega ASC, id ASC`
     );
 
-    // Obtener los ítems para cada prepedido
     for (const row of rows) {
       const [items] = await pool.query(
         `SELECT pi.producto_id, pr.nombre AS producto, pi.unidad, pi.cantidad
@@ -260,9 +253,9 @@ router.get("/pendientes-aprobacion", authRequired, requireRoles("admin"), asyncH
   }
 }));
 
-/* ============================================================================ */
+
 /* APROBAR PRE-PEDIDO                                                           */
-/* ============================================================================ */
+
 router.post("/:preId/aprobar", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   const { preId } = req.params;
   const notify = String(req.query.notify || "0") === "1";
@@ -339,9 +332,8 @@ router.post("/:preId/aprobar", authRequired, requireRoles("admin"), asyncHandler
   }
 }));
 
-/* ============================================================================ */
-/* RECHAZAR PRE-PEDIDO                                                          */
-/* ============================================================================ */
+
+/* RECHAZAR PRE-PEDIDO */
 router.post("/:preId/rechazar", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   const { preId } = req.params;
   const { motivo } = req.body || {};
@@ -401,9 +393,9 @@ router.post("/:preId/rechazar", authRequired, requireRoles("admin"), asyncHandle
   }
 }));
 
-/* ============================================================================ */
-/* PREVISUALIZAR PRE-PEDIDO                                                     */
-/* ============================================================================ */
+
+/* PREVISUALIZAR PRE-PEDIDO */
+
 router.post("/:preId/preview", authRequired, requireRoles("admin", "cajera"), asyncHandler(async (req, res) => {
   const { preId } = req.params;
   const { pin } = req.body || {};

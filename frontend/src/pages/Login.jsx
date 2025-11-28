@@ -52,8 +52,6 @@ return (
           </h2>
         </div>
         <div className="w-full grid bg-white dark:bg-gray-800">
-          
-          {/* FORMULARIO */}
           <div className="p-10 space-y-6">
             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white text-center">
               Inicia sesión en tu cuenta
@@ -70,8 +68,6 @@ return (
             )}
 
             <form className="space-y-4 md:space-y-6" onSubmit={onSubmit}>
-              
-              {/* Email Input */}
               <div>
                 <label
                   htmlFor="email"
@@ -95,8 +91,6 @@ return (
                 />
                 </div>
               </div>
-
-              {/* Password Input */}
               <div>
                 <label
                   htmlFor="password"
@@ -130,8 +124,6 @@ return (
                   </button>
                 </div>
               </div>
-
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
@@ -141,8 +133,6 @@ return (
               >
                 {loading ? "Ingresando..." : "Ingresar"}
               </button>
-
-              {/* Botón para agendar sin cuenta */}
               <button
                 type="button"
                 onClick={() => navigate("/agendar")}

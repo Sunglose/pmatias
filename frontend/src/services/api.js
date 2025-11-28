@@ -1,4 +1,3 @@
-// frontend/src/services/api.js
 import axios from "axios";
 
 const api = axios.create({
@@ -13,7 +12,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Interceptor de respuesta para refresh automático
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -29,16 +27,12 @@ api.interceptors.response.use(
         const { data } = await api.post("/auth/refresh", {
           refreshToken: localStorage.getItem("refreshToken"),
         });
-        // Actualiza el token en localStorage
         localStorage.setItem("token", data.accessToken);
         api.defaults.headers.common["Authorization"] = `Bearer ${data.accessToken}`;
         originalRequest.headers["Authorization"] = `Bearer ${data.accessToken}`;
-        // Si el backend envía el usuario, actualízalo también
         if (data.user) {
           localStorage.setItem("user", JSON.stringify(data.user));
         }
-        // Si usas contexto, podrías actualizar el estado aquí (opcional)
-        // Ejemplo: useAuth().login({ accessToken: data.accessToken, user: data.user || currentUser });
         return api(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem("token");

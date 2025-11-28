@@ -9,5 +9,3 @@ export function passwordResetTemplate({ resetUrl }) {
     `,
   };
 }
-
-// Agrega más templates según lo necesites

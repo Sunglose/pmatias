@@ -20,7 +20,7 @@ export default function AdminClientes() {
     [token]
   );
 
-  // Hover/tooltip contraseña temporal
+  // Hover contraseña temporal
   const [hoverId, setHoverId] = useState(null);
   const [hoverPass, setHoverPass] = useState("");
 
@@ -265,7 +265,6 @@ export default function AdminClientes() {
   async function openEditarRepartoCliente(cliente) {
     setClienteReparto(cliente);
     setOpenEditarReparto(true);
-    // Usa cliente.cliente_id para la consulta
     const horarios = await fetchJSON(`${API}/api/clientes/${cliente.cliente_id}/horarios-reparto`);
     setHorariosRepartoEditar(horarios);
   }
@@ -391,7 +390,6 @@ export default function AdminClientes() {
         horarios={horariosRepartoEditar}
         setHorarios={setHorariosRepartoEditar}
         onSave={async () => {
-          // Usa clienteReparto.cliente_id en los endpoints
           const horariosActuales = await fetchJSON(`${API}/api/clientes/${clienteReparto.cliente_id}/horarios-reparto`);
           for (const h of horariosActuales) {
             await fetchJSON(`${API}/api/clientes/${clienteReparto.cliente_id}/horarios-reparto/${h.id}`, {

@@ -30,10 +30,8 @@ export default function AdminPedidos() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Tab: "actual" | "historial" | "hoy"
-  const [tab, setTab] = useState("hoy"); // ← CAMBIO: cambiar de "actual" a "hoy"
+  const [tab, setTab] = useState("hoy");
 
-  // Verificar autenticación
   useEffect(() => {
     if (!token) {
       setError("No estás autenticado. Redirigiendo al login...");
@@ -50,7 +48,6 @@ export default function AdminPedidos() {
     return st === "entregado" || st === "cancelado";
   };
 
-  // Helper para capitalizar el estado
   const capitalize = (s) => {
     const str = (s ?? "").toString().toLowerCase();
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
@@ -61,11 +58,9 @@ export default function AdminPedidos() {
   const [metaActual, setMetaActual] = useState({ totalPages: 1 });
   const [metaHist, setMetaHist] = useState({ totalPages: 1 });
 
-  // --- NUEVO: estados para "Hoy" (paginación client-side) ---
   const [pageHoy, setPageHoy] = useState(1);
   const [metaHoy, setMetaHoy] = useState({ totalPages: 1 });
   const HOY_LIMIT = 7;
-  // --- FIN NUEVO ---
 
   async function cargarActual(p = 1) {
     if (!token) {
@@ -103,16 +98,13 @@ export default function AdminPedidos() {
     finally { setLoading(false); }
   }
 
-  // --- ACTUALIZADO: cargar pedidos para "Hoy" con paginación client-side ---
   function isTodayDate(fecha_iso) {
     if (!fecha_iso) return false;
-    // fecha_iso viene en formato YYYY-MM-DD
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    const todayStr = today.toISOString().split('T')[0];
     return fecha_iso === todayStr;
   }
 
-  // cargarHoy ahora recibe la página y realiza slice sobre todos los pedidos del día
   async function cargarHoy(p = 1) {
     if (!token) {
       setError("No tienes permisos para ver los pedidos de hoy");
@@ -122,7 +114,7 @@ export default function AdminPedidos() {
     try {
       const data = await fetchJSON(`${API}/api/pedidos?page=1&limit=1000`);
       const all = Array.isArray(data.data) ? data.data : [];
-      const hoyAll = all.filter(pedido => isTodayDate(pedido.fecha_iso)); // ← CAMBIO: usar fecha_iso
+      const hoyAll = all.filter(pedido => isTodayDate(pedido.fecha_iso));
       const totalPages = Math.max(1, Math.ceil(hoyAll.length / HOY_LIMIT));
       const page = Math.min(Math.max(1, p), totalPages);
       const paged = hoyAll.slice((page - 1) * HOY_LIMIT, page * HOY_LIMIT);
@@ -137,23 +129,19 @@ export default function AdminPedidos() {
       setLoading(false);
     }
   }
-  // --- FIN ACTUALIZADO ---
 
   useEffect(() => { 
     if (token && user) {
-      cargarHoy(1); // ← CAMBIO: cambiar de cargarActual(1) a cargarHoy(1)
+      cargarHoy(1);
     }
   }, [token, user]);
 
   useEffect(() => {
-    // Recarga según la pestaña y la página correspondiente
     if (tab === "hoy") cargarHoy(pageHoy);
     else if (tab === "actual") cargarActual(pageActual);
     else if (tab === "historial") cargarHist(pageHist);
   }, [tab, pageActual, pageHist, pageHoy]);
   
-
-  // Decidir qué recargar después de mutaciones (delete)
   function recargarDespuesDeCambio() {
     if (tab === "hoy") {
       const next = pageHoy > 1 && rows.length <= 1 ? pageHoy - 1 : pageHoy;
@@ -185,8 +173,7 @@ export default function AdminPedidos() {
     } catch (e) { setError(parseError(e)); }
   }
 
-  // Configuración para Table
-  const tableRows = rows; // <- usar los pedidos tal cual, sin índice local
+  const tableRows = rows;
   const tableColumns = [
     { key: "id", header: "ID" },
     {
@@ -194,7 +181,6 @@ export default function AdminPedidos() {
       cell: (p) => (
         <div>
           <div className="font-semibold">{p.cliente_nombre || "(cliente eliminado)"}</div>
-          {/* ← CAMBIO: íconos inline con texto */}
           {p.cliente_email && (
             <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
               <MdMail className="flex-shrink-0" />

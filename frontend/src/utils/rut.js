@@ -1,5 +1,3 @@
-// frontend/src/utils/rut.js
-
 export function formatRut(value) {
   let rut = value.replace(/[^0-9kK]/g, "").toUpperCase();
   if (rut.length > 1) {

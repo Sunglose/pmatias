@@ -1,4 +1,3 @@
-// frontend/src/utils/errors.js
 export function parseError(error) {
   try {
     if (typeof error === 'string') return error;
@@ -9,7 +8,6 @@ export function parseError(error) {
   }
 }
 
-// Sanitiza cadenas eliminando caracteres potencialmente peligrosos
 export function sanitizeInput(str) {
   if (typeof str !== "string") return "";
   return str.trim().replace(/[<>{}[\];$]/g, "");

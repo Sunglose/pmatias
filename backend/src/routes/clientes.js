@@ -24,24 +24,24 @@ router.get("/", authRequired, requireRoles("admin"), asyncHandler(async (req, re
 
   const [rows] = await pool.query(
     `SELECT
-       c.id AS cliente_id,
-       c.usuario_id,
-       c.nombre,
-       c.local,
-       c.rut,
-       c.telefono,
-       c.direccion,
-       u.email,
-       (
-         u.force_password_change = 1
-         AND u.temp_password_enc IS NOT NULL
-         AND (u.temp_password_expires_at IS NULL OR u.temp_password_expires_at > NOW())
-       ) AS has_temp
-     FROM clientes c
-     JOIN usuarios u ON u.id = c.usuario_id
-     WHERE ${where}
-     ORDER BY c.usuario_id ASC
-     LIMIT ? OFFSET ?`,
+      c.id AS cliente_id,
+      c.usuario_id,
+      c.nombre,
+      c.local,
+      c.rut,
+      c.telefono,
+      c.direccion,
+      u.email,
+      (
+        u.force_password_change = 1
+        AND u.temp_password_enc IS NOT NULL
+        AND (u.temp_password_expires_at IS NULL OR u.temp_password_expires_at > NOW())
+      ) AS has_temp
+    FROM clientes c
+    JOIN usuarios u ON u.id = c.usuario_id
+    WHERE ${where}
+    ORDER BY c.usuario_id ASC
+    LIMIT ? OFFSET ?`,
     [...params, lim, off]
   );
 
@@ -105,9 +105,8 @@ router.post("/", authRequired, requireRoles("admin"), asyncHandler(async (req, r
 }));
 
 router.delete("/:id", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
-  const { id } = req.params; // usuario_id
+  const { id } = req.params;
   try {
-    // Borrar usuario (por FK ON DELETE CASCADE, borra cliente)
     const [r] = await pool.query("DELETE FROM usuarios WHERE id = ?", [id]);
     if (r.affectedRows === 0) return res.status(404).json({ message: "Cliente/usuario no encontrado" });
     res.json({ deleted: true });
@@ -150,7 +149,6 @@ router.get("/:id/temp-password", authRequired, requireRoles("admin"), asyncHandl
 // ====== ADMIN Y CLIENTE PROPIETARIO ======
 router.get("/:id/horarios-reparto", authRequired, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  // Permite solo si es admin o si el usuario es dueño del cliente
   if (
     req.user.rol !== "admin" &&
     !(req.user.rol === "cliente" && String(id) === String(req.user.cliente_id))
@@ -190,7 +188,7 @@ function generarPasswordTemporal() {
 }
 
 function encryptTempPassword(plain) {
-  const iv = crypto.randomBytes(12); // GCM recomienda 12
+  const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", ENC_KEY, iv);
   const enc = Buffer.concat([cipher.update(plain, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();

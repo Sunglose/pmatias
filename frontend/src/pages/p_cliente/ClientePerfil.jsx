@@ -24,7 +24,6 @@ export default function ClientePerfil() {
     [token]
   );
 
-  // Estado base
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -39,23 +38,20 @@ export default function ClientePerfil() {
     rut: "",
   });
 
-  // Edit perfil
   const [editOpen, setEditOpen] = useState(false);
   const [form, setForm] = useState({ email: "", local: "", telefono: "" });
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMsg, setProfileMsg] = useState("");
 
-  // Password
   const [pwOpen, setPwOpen] = useState(false);
   const [newPw1, setNewPw1] = useState("");
   const [newPw2, setNewPw2] = useState("");
   const [savingPw, setSavingPw] = useState(false);
   const [pwMsg, setPwMsg] = useState("");
 
-  // Direcciones
-  const [addresses, setAddresses] = useState([]); // {id, texto, es_principal}
+  const [addresses, setAddresses] = useState([]);
   const [addrOpen, setAddrOpen] = useState(false);
-  const [addrEditing, setAddrEditing] = useState(null); // null = crear, {id, texto}
+  const [addrEditing, setAddrEditing] = useState(null);
   const [addrText, setAddrText] = useState("");
   const [selectedAddrId, setSelectedAddrId] = useState(null);
   const [addrMsg, setAddrMsg] = useState("");

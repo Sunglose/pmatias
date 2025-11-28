@@ -5,7 +5,6 @@ import bcrypt from "bcrypt";
 
 const router = Router();
 
-// Todas requieren login
 router.use(authRequired);
 
 // ================= PERFIL =================
@@ -158,8 +157,6 @@ router.delete("/addresses/:id", asyncHandler(async (req, res) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
-
-    // ¿era principal?
     const [rows] = await conn.query(
       "SELECT es_principal FROM direcciones WHERE id = ? AND usuario_id = ? LIMIT 1",
       [id, userId]
@@ -173,7 +170,6 @@ router.delete("/addresses/:id", asyncHandler(async (req, res) => {
     await conn.query("DELETE FROM direcciones WHERE id = ? AND usuario_id = ?", [id, userId]);
 
     if (wasPrincipal) {
-      // promover otra
       const [any] = await conn.query(
         "SELECT id FROM direcciones WHERE usuario_id = ? ORDER BY id DESC LIMIT 1",
         [userId]

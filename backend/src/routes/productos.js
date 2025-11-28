@@ -1,6 +1,6 @@
 import { Router } from "express";
 import upload from "../lib/upload.js";
-import { authRequired, requireRoles, asyncHandler } from "./auth.js"; // <-- importa authRequired
+import { authRequired, requireRoles, asyncHandler } from "./auth.js";
 import { pool } from "../db.js";
 import fs from "fs/promises";
 import path from "path";
@@ -18,7 +18,7 @@ function absUploadPath(relPath) {
 }
 
 // ========================= Listar CATÁLOGO =========================
-// GET /api/productos (solo activos para todos los roles)
+// GET /api/productos
 router.get("/", asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
     `SELECT id, nombre, imagen_path, activo
@@ -39,7 +39,7 @@ router.get("/", asyncHandler(async (req, res) => {
 }));
 
 // ========================= Listar ADMIN =========================
-// GET /api/productos/admin (admin ve todos)
+// GET /api/productos/admin
 router.get("/admin", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   const [rows] = await pool.query(
     `SELECT id, nombre, imagen_path, activo
@@ -168,12 +168,11 @@ router.delete("/:id", authRequired, requireRoles("admin"), asyncHandler(async (r
 }));
 
 // ========================= Activar / Desactivar =========================
-// PATCH /api/productos/:id/activo { activo?: 0|1|true|false }
+// PATCH /api/productos/:id/activo
 router.patch("/:id/activo", authRequired, requireRoles("admin"), asyncHandler(async (req, res) => {
   const { id } = req.params;
   let { activo } = req.body || {};
 
-  // Si no se envía, hacemos toggle automático
   const [curRows] = await pool.query(`SELECT activo FROM productos WHERE id = ?`, [id]);
   if (!curRows.length) return res.status(404).json({ message: "Producto no encontrado" });
 

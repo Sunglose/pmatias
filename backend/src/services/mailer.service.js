@@ -4,23 +4,20 @@ const {
   MAIL_FROM = 'Panadería Matías <no-reply@panaderia-matias.com>',
   GMAIL_USER,
   GMAIL_PASS,
-  // SMTP alternativo (si lo necesitas en el futuro)
+
   SMTP_HOST,
   SMTP_PORT = '587',
   SMTP_USER,
   SMTP_PASS,
 } = process.env;
 
-// Elegir transporte:
-// - Si hay SMTP_* => usar SMTP personalizado
-// - Si no, usar Gmail
 let transporter;
 
 if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: Number(SMTP_PORT),
-    secure: Number(SMTP_PORT) === 465, // 465 = SSL; 587 = STARTTLS
+    secure: Number(SMTP_PORT) === 465,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
   });
 } else {
@@ -33,10 +30,10 @@ if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
 /**
  * Enviar correo genérico
  * @param {Object} options
- * @param {string|string[]} options.to - Destinatario(s)
- * @param {string} options.subject - Asunto
- * @param {string} options.html - Contenido HTML
- * @param {string} [options.text] - Contenido texto plano
+ * @param {string|string[]} options.to
+ * @param {string} options.subject
+ * @param {string} options.html
+ * @param {string} [options.text]
  */
 export async function sendEmail({ to, subject, html, text }) {
   try {
@@ -45,7 +42,7 @@ export async function sendEmail({ to, subject, html, text }) {
       to,
       subject,
       html,
-      text: text || html.replace(/<[^>]*>/g, ''), // Fallback a versión sin HTML
+      text: text || html.replace(/<[^>]*>/g, ''),
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -57,9 +54,6 @@ export async function sendEmail({ to, subject, html, text }) {
   }
 }
 
-/**
- * Plantilla para confirmación de pedido
- */
 function plantillaConfirmacionPedido({ 
   clienteNombre, 
   pedidoId, 
@@ -83,7 +77,6 @@ function plantillaConfirmacionPedido({
     </tr>
   `).join('');
 
-  // ← FIX: Formatear fecha correctamente
   const fechaFormateada = fecha ? new Date(fecha + 'T00:00:00').toLocaleDateString('es-CL', { 
     weekday: 'long', 
     year: 'numeric', 
@@ -138,11 +131,9 @@ function plantillaConfirmacionPedido({
   return { subject, html, text };
 }
 
-/**
- * Enviar notificación de confirmación de pedido
- */
+/* Enviar notificación de confirmación de pedido*/
 export async function enviarConfirmacionPedido(options) {
-  const { para, ...resto } = options; // resto ahora puede incluir abono
+  const { para, ...resto } = options;
   if (!para) {
     console.warn('[Nodemailer] No hay destinatario para confirmación de pedido');
     return;
@@ -159,10 +150,10 @@ export async function enviarEmailAprobacion(prepedido) {
   const mailOptions = {
     from: MAIL_FROM,
     to: prepedido.cliente_email,
-    subject: `✅ Pre-pedido #${prepedido.id} APROBADO - Panadería Matías`,
+    subject: `Pre-pedido #${prepedido.id} APROBADO - Panadería Matías`,
     html: `
       <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:640px;margin:auto;padding:24px;border:1px solid #eee;border-radius:12px;">
-        <h2 style="margin:0 0 8px;color:#16a34a;">¡Tu pedido ha sido aprobado! ✅</h2>
+        <h2 style="margin:0 0 8px;color:#16a34a;">¡Tu pedido ha sido aprobado!</h2>
         <p style="margin:0 0 16px;color:#333;">Hola <strong>${prepedido.cliente_nombre}</strong>,</p>
         <p style="margin:0 0 16px;color:#333;">Tu pre-pedido <strong>#${prepedido.id}</strong> ha sido aprobado por nuestro equipo.</p>
         
@@ -191,10 +182,10 @@ export async function enviarEmailRechazo(prepedido, motivo) {
   const mailOptions = {
     from: MAIL_FROM,
     to: prepedido.cliente_email,
-    subject: `❌ Pre-pedido #${prepedido.id} RECHAZADO - Panadería Matías`,
+    subject: `Pre-pedido #${prepedido.id} RECHAZADO - Panadería Matías`,
     html: `
       <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:640px;margin:auto;padding:24px;border:1px solid #eee;border-radius:12px;">
-        <h2 style="margin:0 0 8px;color:#dc2626;">Información sobre tu pedido ❌</h2>
+        <h2 style="margin:0 0 8px;color:#dc2626;">Información sobre tu pedido</h2>
         <p style="margin:0 0 16px;color:#333;">Hola <strong>${prepedido.cliente_nombre}</strong>,</p>
         <p style="margin:0 0 16px;color:#333;">Lamentamos informarte que tu pre-pedido <strong>#${prepedido.id}</strong> ha sido rechazado.</p>
         

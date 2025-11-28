@@ -1,4 +1,3 @@
-// src/pages/ClientePedidos.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Table } from "../../components/ui/Table";
@@ -14,8 +13,6 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export default function ClientePedidos() {
   const navigate = useNavigate();
-
-  // Auth headers
   const token = useMemo(() => localStorage.getItem("token"), []);
   const headers = useMemo(
     () => ({
@@ -25,12 +22,9 @@ export default function ClientePedidos() {
     [token]
   );
 
-  // Data
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setErr] = useState("");
-
-  // Tab: "actual" | "historial"
   const [tab, setTab] = useState("actual");
 
   const isHistorico = (p) => {
@@ -47,7 +41,6 @@ export default function ClientePedidos() {
     tab === "actual" ? !isHistorico(p) : isHistorico(p)
   );
 
-  // Configuración para Table
   const tableRows = filteredRows.map((p, i) => ({ ...p, _n: i + 1 }));
   const tableColumns = [
     { key: "_n", header: "#" },

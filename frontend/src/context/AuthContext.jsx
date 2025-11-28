@@ -37,7 +37,6 @@ export const AuthProvider = ({ children }) => {
     sessionStorage.removeItem("agendar_cart:pasajero:anon");
     sessionStorage.removeItem("agendar_draft:pasajero:anon");
 
-    // Elimina todos los carritos/drafts por rol y userId
     const roles = ["cliente", "admin", "cajera", "pasajero"];
     const userIds = [auth.user?.id, "anon"];
     roles.forEach(role => {
@@ -51,8 +50,7 @@ export const AuthProvider = ({ children }) => {
 
     window.location.href = "/auth/login";
   };
-
-  // Derivar role y userId del user
+  
   const role = auth.user?.rol || "pasajero";
   const userId = auth.user?.id || "anon";
 

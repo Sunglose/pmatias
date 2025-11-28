@@ -1,4 +1,3 @@
-// src/pages/p_cajera/ConfirmarPin.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import Input from "../../components/ui/Input";
@@ -18,7 +17,7 @@ export default function CajaConfirmarPin() {
 
   const [preId, setPreId] = useState(preIdParam);
   const [pin, setPin] = useState("");
-  const [abono, setAbono] = useState(""); // CLP
+  const [abono, setAbono] = useState("");
   const [loading, setLoading] = useState(false);
   const [okMsg, setOkMsg] = useState("");
   const [errMsg, setErrMsg] = useState("");
@@ -84,7 +83,6 @@ export default function CajaConfirmarPin() {
     e.preventDefault();
     setOkMsg(""); setErrMsg("");
 
-    // Validar abono antes de confirmar
     const abonoNum = Number(String(abono).replace(/\D/g, ""));
     if (!Number.isFinite(abonoNum) || abonoNum < 0) {
       return setErrMsg("Ingresa un abono válido (en pesos CLP).");
@@ -129,11 +127,10 @@ export default function CajaConfirmarPin() {
         throw new Error(body?.message || body?.error || `Error ${res.status}: No se pudo confirmar el pre-pedido.`);
       }
 
-      // El backend ya elimina el pre-pedido automáticamente
-      setOkMsg(`Listo ✅ Pre-pedido #${cleanPreId} promovido a Pedido #${body?.pedido_id || "?"}.`);
+      setOkMsg(`Listo Pre-pedido #${cleanPreId} promovido a Pedido #${body?.pedido_id || "?"}.`);
       setPin("");
       setPreId("");
-      setAbono(""); // limpiar
+      setAbono("");
     } catch (e) {
       console.error("Error al confirmar PIN:", e);
       setErrMsg(e?.message || "Error al confirmar PIN.");

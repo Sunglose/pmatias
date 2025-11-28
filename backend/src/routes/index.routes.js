@@ -1,4 +1,3 @@
-// backend/src/routes/index.routes.js
 import { Router } from "express";
 
 import accountRouter from "./account.js";

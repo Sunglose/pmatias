@@ -1,6 +1,4 @@
-// src/services/approval.service.js
 export function requiereAprobPorItem(items = []) {
-  // Requiere aprobación si algún producto supera el límite individual
   const LIMITE_UN = 100;
   const LIMITE_KG = 100;
   for (const it of items) {

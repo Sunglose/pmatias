@@ -43,7 +43,6 @@ export default function AdminProductos() {
     try {
       await fetchJSON(`${API}/api/productos/${id}/activo`, {
         method: "PATCH",
-        // si quisieras forzar un valor: body: JSON.stringify({ activo: true|false })
       });
       await cargar();
     } catch (e) {

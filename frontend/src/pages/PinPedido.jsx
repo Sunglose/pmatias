@@ -1,10 +1,9 @@
-// src/pages/PinPage.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Button from "../components/ui/Button";
 
 export default function PinPedido() {
-  const { id: preId } = useParams(); // mapear :id -> preId
+  const { id: preId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 

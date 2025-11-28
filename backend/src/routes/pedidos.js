@@ -2,7 +2,7 @@ import { Router } from "express";
 import { pool } from "../db.js";
 import { notificarPedidoPorId } from "../services/notificacion.service.js";
 import { formatFechaDDMMYYYY, getTomorrowYMD, getMaxDateYMD } from "../utils/fecha.js";
-import { authRequired, requireRoles, asyncHandler } from "./auth.js"; // <-- importa authRequired
+import { authRequired, requireRoles, asyncHandler } from "./auth.js";
 
 const router = Router();
 

@@ -1,11 +1,9 @@
-// src/services/notifications.service.js
 import { pool } from "../db.js";
 import { sendEmail } from "./mailer.service.js";
 import { fechaProgramadaLegible } from "../utils/fecha.js";
 import { enviarConfirmacionPedido } from "./mailer.service.js";
 
 export async function notificarPedidoPorId(pedidoId, { asuntoEmail, textoWaPrefix } = {}) {
-  // 1) Pedido + cliente
   const [rows] = await pool.query(
     `
     SELECT
@@ -29,8 +27,6 @@ export async function notificarPedidoPorId(pedidoId, { asuntoEmail, textoWaPrefi
   );
   if (!rows.length) return false;
   const pedido = rows[0];
-
-  // 2) Items
   const [items] = await pool.query(
     `
     SELECT pr.nombre AS producto, pi.cantidad, pi.unidad
@@ -41,12 +37,10 @@ export async function notificarPedidoPorId(pedidoId, { asuntoEmail, textoWaPrefi
     [pedidoId]
   );
 
-  // 3) Extraer abono desde observaciones
   const obs = (pedido.observaciones || "");
   const matchAbono = obs.match(/Abono\s+pasajero:\s*\$?\s*([0-9]+)/i);
   const abono = matchAbono ? parseInt(matchAbono[1], 10) : null;
 
-  // 4) Email
   if (pedido.cliente_email) {
     await enviarConfirmacionPedido({
       para: pedido.cliente_email,

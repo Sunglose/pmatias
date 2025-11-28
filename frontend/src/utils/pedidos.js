@@ -1,4 +1,3 @@
-// frontend/src/utils/pedidos.js
 export function parseResumen(str = "") {
   return str
     .split("·")

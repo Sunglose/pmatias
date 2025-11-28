@@ -1,4 +1,3 @@
-// frontend/src/services/adminService.js
 import api from "./api";
 
 export const fetchClientes = async ({ buscar = "", page = 1, limit = 20, solo_activos = 0 } = {}) => {

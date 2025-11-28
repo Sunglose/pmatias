@@ -9,7 +9,7 @@ export function getTomorrowYMD() {
   now.setHours(0, 0, 0, 0);
   const tmr = new Date(now);
   tmr.setDate(now.getDate() + 1);
-  return tmr.toISOString().slice(0, 10); // YYYY-MM-DD
+  return tmr.toISOString().slice(0, 10);
 }
 
 export function fechaProgramadaLegible(fecha_iso, hora_HHmm) {
@@ -23,9 +23,6 @@ export function fechaProgramadaLegible(fecha_iso, hora_HHmm) {
   }
 }
 
-/**
- * Retorna la fecha máxima permitida (X días desde mañana) en formato YYYY-MM-DD
- */
 export function getMaxDateYMD(daysFromTomorrow = 7) {
   const d = new Date();
   d.setDate(d.getDate() + 1 + daysFromTomorrow);

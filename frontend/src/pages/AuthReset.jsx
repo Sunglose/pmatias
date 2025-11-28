@@ -30,7 +30,7 @@ export default function AuthReset() {
       setSuccess("¡Contraseña restablecida correctamente! Redirigiendo al inicio de sesión...");
       setTimeout(() => {
         navigate("/auth/login");
-      }, 2000); // redirige después de 2 segundos
+      }, 2000);
     } catch (err) {
       setError("No se pudo restablecer la contraseña.");
     } finally {

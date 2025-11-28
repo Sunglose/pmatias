@@ -91,8 +91,6 @@ router.post("/login", async (req, res) => {
     const accessToken = jwt.sign({ id: user.id, rol: user.rol }, JWT_SECRET, { expiresIn: "15m" });
     const refreshToken = jwt.sign({ userId: user.id }, JWT_REFRESH_SECRET, { expiresIn: "7d" });
     await saveRefreshToken(user.id, refreshToken);
-
-    // Incluye el usuario en la respuesta
     res.json({
       accessToken,
       refreshToken,

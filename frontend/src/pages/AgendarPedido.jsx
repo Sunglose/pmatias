@@ -1,4 +1,3 @@
-// src/pages/AgendarPedido.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaTrash } from "react-icons/fa6";
@@ -13,7 +12,6 @@ export default function AgendarPedido() {
   const { user, role, userId } = useAuth();
   const [cart, setCart] = useCart(role, userId);
 
-  // === Pasajero público (sin token) ===
   const token = useMemo(() => localStorage.getItem("token"), []);
   const isPasajero = !token;
 
@@ -22,35 +20,29 @@ export default function AgendarPedido() {
     role === "cajera" ? "/cajera" :
     role === "cliente" ? "/cliente" : "";
 
-  // Usa sessionStorage en pasajero, localStorage en logueados
   const storage = useMemo(() => (isPasajero ? window.sessionStorage : window.localStorage), [isPasajero]);
 
   const cartKey = useMemo(() => `agendar_cart:${role}:${userId}`, [role, userId]);
   const draftKey = useMemo(() => `agendar_draft:${role}:${userId}`, [role, userId]);
 
-  // Al entrar como pasajero, limpiar cualquier carrito previo
   useEffect(() => {
     if (isPasajero) {
       storage.removeItem(cartKey);
       storage.removeItem(draftKey);
       setCart([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPasajero]);
 
-  // Catálogo
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  // Modal de agregar
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalProduct, setModalProduct] = useState(null); // { id, nombre, imagen|imagen_url }
-  const [modalUnidad, setModalUnidad] = useState("kg");   // 'kg' | 'un'
+  const [modalProduct, setModalProduct] = useState(null);
+  const [modalUnidad, setModalUnidad] = useState("kg");
   const [modalCantidad, setModalCantidad] = useState("1");
   const [modalError, setModalError] = useState("");
 
-  // Cargar productos (sin token para pasajero)
   async function fetchProductos() {
     setLoading(true); setErr("");
     try {
@@ -69,7 +61,7 @@ export default function AgendarPedido() {
       setLoading(false);
     }
   }
-  useEffect(() => { fetchProductos(); /* eslint-disable-next-line */ }, [isPasajero]);
+  useEffect(() => { fetchProductos();}, [isPasajero]);
 
   function openModal(p) {
     setModalProduct(p);
@@ -134,7 +126,6 @@ export default function AgendarPedido() {
     navigate(dest);
   }
 
-  // Escape para cerrar modal
   useEffect(() => {
     if (!isModalOpen) return;
     const onKey = (e) => { if (e.key === "Escape") closeModal(); };
@@ -264,7 +255,6 @@ export default function AgendarPedido() {
                     value={modalCantidad}
                     onChange={e => {
                       let value = parseFloat(e.target.value);
-                      // Redondear a un decimal y validar mínimo
                       if (isNaN(value)) value = '';
                       else if (value < 0.5) value = 0.5;
                       else value = Math.floor(value * 10) / 10;
@@ -275,7 +265,7 @@ export default function AgendarPedido() {
                   <select
                     value={modalUnidad}
                     onChange={(e) => {
-                      const next = e.target.value; // "kg" | "un"
+                      const next = e.target.value;
                       setModalUnidad(next);
                       const n = Number(String(modalCantidad).replace(",", "."));
                       if (next === "un" && !Number.isNaN(n)) {

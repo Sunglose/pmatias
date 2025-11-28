@@ -1,4 +1,3 @@
-// frontend/src/utils/fetch.js
 export async function fetchJSON(url, opts = {}) {
   let token = localStorage.getItem('token');
   const headers = {
@@ -26,7 +25,6 @@ export async function fetchJSON(url, opts = {}) {
         headers.Authorization = `Bearer ${token}`;
         res = await fetch(url, { ...opts, headers });
       } else {
-        // Refresh falló, limpiar y redirigir SOLO UNA VEZ
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         localStorage.removeItem("refreshToken");

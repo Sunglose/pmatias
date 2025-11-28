@@ -1,4 +1,3 @@
-// src/pages/AgendarConfirmacion.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaTrash } from "react-icons/fa6";
@@ -6,23 +5,21 @@ import { useAuth } from "../context/AuthContext";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { parseError, sanitizeInput } from "../utils/errores";
-import { getTomorrowYMD, getMaxDateYMD } from "../utils/fecha"; // ← NUEVO import
+import { getTomorrowYMD, getMaxDateYMD } from "../utils/fecha";
 import { fetchJSON } from "../utils/fetch";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export default function AgendarConfirmacion() {
   const navigate = useNavigate();
-  const { user } = useAuth(); // { id, rol }
+  const { user } = useAuth();
 
-  // === Detección de pasajero (sin token) ===
   const token = useMemo(() => localStorage.getItem("token"), []);
   const isPasajero = !token;
 
   const role = isPasajero ? "pasajero" : (user?.rol || "cliente");
   const userId = isPasajero ? "anon" : (user?.id ?? "anon");
 
-  // Usa sessionStorage en pasajero, localStorage en logueados
   const storage = useMemo(() => (isPasajero ? window.sessionStorage : window.localStorage), [isPasajero]);
 
   const cartKey = useMemo(() => `agendar_cart:${role}:${userId}`, [role, userId]);
@@ -50,32 +47,28 @@ export default function AgendarConfirmacion() {
   }
 
   // -------- Form principal --------
-  const [tipoEntrega, setTipoEntrega] = useState("retiro"); // "retiro" | "reparto"
+  const [tipoEntrega, setTipoEntrega] = useState("retiro");
   const [fecha, setFecha] = useState(() => getTomorrowYMD());
   const tomorrowYMD = useMemo(() => getTomorrowYMD(), []);
-  const maxDateYMD = useMemo(() => getMaxDateYMD(6), []); // ← NUEVO: 7 días desde mañana
+  const maxDateYMD = useMemo(() => getMaxDateYMD(6), []);
   const [hora, setHora] = useState("08");
   const [min, setMin] = useState("00");
 
   // -------- Datos cliente --------
-  // Para pasajero (kiosco/QR) y para staff creando pasajero:
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [direccionTxt, setDireccionTxt] = useState("");
 
-  // Para rol cliente (perfil propio):
   const [profile, setProfile] = useState(null);
-  const [addresses, setAddresses] = useState([]); // [{id, texto, es_principal}]
+  const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
 
-  // UI
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [requiereAprob, setRequiereAprob] = useState(false);
 
-  // Cargar perfil/direcciones SOLO si es cliente
   useEffect(() => {
     if (role !== "cliente") return;
     (async () => {
@@ -85,7 +78,7 @@ export default function AgendarConfirmacion() {
           fetchJSON(`${API}/api/account/profile`),
           fetchJSON(`${API}/api/account/addresses`),
         ]);
-        setProfile(p || {}); // <-- aquí debe estar cliente_id
+        setProfile(p || {});
         setAddresses(Array.isArray(a) ? a : []);
 
         if (p) {
@@ -109,8 +102,6 @@ export default function AgendarConfirmacion() {
   function validate() {
     if (cart.length === 0) return "Agrega al menos un producto.";
     if (!fecha) return "Selecciona una fecha de entrega.";
-
-    // Validar rango de fechas (mañana hasta 7 días)
     if (fecha < tomorrowYMD || fecha > maxDateYMD) {
       return `Solo puedes agendar entre ${tomorrowYMD} y ${maxDateYMD} (hasta 1 semana desde mañana).`;
     }
@@ -122,7 +113,6 @@ export default function AgendarConfirmacion() {
         return "Selecciona una dirección para el reparto (en tu perfil puedes agregar más).";
       }
     } else {
-      // pasajero (kiosco) o staff creando pasajero
       if (!nombre || nombre.trim().length < 3) return "Ingresa el nombre del cliente.";
       if (!/^[^@]+@[^@]+\.[^@]+$/.test(email)) return "Email inválido.";
       if (!/^\d{9}$/.test(telefono)) return "El teléfono debe tener 9 dígitos.";
@@ -138,7 +128,6 @@ export default function AgendarConfirmacion() {
 
     setSaving(true);
     try {
-      // Construir headers según si hay token o no
       const headers = {
         "Content-Type": "application/json",
       };
@@ -147,7 +136,6 @@ export default function AgendarConfirmacion() {
         headers.Authorization = `Bearer ${token}`;
       }
 
-      // Sanitizar inputs antes de armar el payload
       let safeNombre = sanitizeInput(nombre);
       let safeEmail = sanitizeInput(email);
       let safeTelefono = sanitizeInput(telefono);
@@ -178,17 +166,10 @@ export default function AgendarConfirmacion() {
           },
         };
       }
-
-      console.log("Payload enviado:", payload);
-
-      // ***** Rutas según sea pasajero o autenticado *****
-      // Pasajero -> PREPEDIDO público (sin token)
-      // Autenticado -> PEDIDO normal (con token + notify)
       const createUrl = isPasajero
         ? `${API}/api/prepedidos/public`
         : `${API}/api/pedidos?notify=1`;
 
-      // Crear (pre)pedido
       const res = await fetch(createUrl, {
         method: "POST",
         headers,
@@ -199,7 +180,6 @@ export default function AgendarConfirmacion() {
       const body = await res.json().catch(() => ({}));
 
       if (isPasajero) {
-        // Respuesta de PRE-PEDIDO
         const preId = body?.id;
         const pin = body?.confirm_pin || null;
         const expiresAt = body?.expires_at || null;
@@ -207,28 +187,21 @@ export default function AgendarConfirmacion() {
 
         setRequiereAprob(reqAprob);
 
-        // Guardar por si se recarga
         localStorage.setItem(
           "last_pin_info",
           JSON.stringify({ id: preId, pin, expiresAt, requiereAprob: reqAprob })
         );
 
-        // Redirigir SIEMPRE a la página del PIN
-        // - Si reqAprob es true: la página mostrará "pendiente de aprobación".
-        // - Si no y hay pin: lo mostrará. Si no llegó pin, igual mostrará estado.
         return navigate(`/pin/${preId}`, {
           state: pin ? { pin, expiresAt } : undefined,
         });
       } else {
-        // Respuesta de PEDIDO normal (cliente / staff)
         const pedidoId = body?.id;
         const reqAprob = !!body?.requiere_aprobacion;
         setRequiereAprob(reqAprob);
 
         if (pedidoId && (role === "admin" || role === "cajera")) {
-          // Notificación opcional al cliente (si usas ese endpoint)
           try {
-            // await confirmarPedido(pedidoId, token);
             setOk("Pedido creado y confirmación enviada al cliente.");
           } catch {
             setOk("Pedido creado. (No se pudo enviar el correo de confirmación)");
@@ -237,14 +210,11 @@ export default function AgendarConfirmacion() {
           setOk("Pedido creado con éxito.");
         }
       }
-
-      // limpiar carrito al finalizar
       storage.removeItem(cartKey);
       storage.removeItem(draftKey);
-      localStorage.removeItem("agendar_cart"); // legacy
+      localStorage.removeItem("agendar_cart");
       setCart([]);
 
-      // Redirigir SOLO para clientes o staff; pasajero ya fue navegado arriba
       if (!isPasajero) {
         setTimeout(() => {
           if (role === "cliente") navigate("/cliente/pedidos");
@@ -253,16 +223,15 @@ export default function AgendarConfirmacion() {
       }
     } catch (err) {
       setOk("");
-      setError(parseError(err)); // ← cambiar
+      setError(parseError(err));
     } finally {
       setSaving(false);
     }
   }
 
-  const horas = Array.from({ length: 14 }, (_, i) => String(i + 6).padStart(2, "0")); // 06..19
+  const horas = Array.from({ length: 14 }, (_, i) => String(i + 6).padStart(2, "0"));
   const minutos = ["00", "15", "30", "45"];
 
-  // ==================== NUEVO: CARGAR HORARIOS DE REPARTO ====================
   const [horariosReparto, setHorariosReparto] = useState([]);
 
   useEffect(() => {
@@ -277,7 +246,6 @@ export default function AgendarConfirmacion() {
     cargarHorarios();
   }, [profile?.cliente_id]);
 
-  // Solo muestra "Reparto" si hay horarios asignados
   const puedeReparto = horariosReparto.length > 0;
 
   return (
@@ -322,7 +290,6 @@ export default function AgendarConfirmacion() {
                 onChange={(e) => setFecha(e.target.value)}
               />
               <span className="hidden sm:inline-block w-px h-6 bg-gray-300 dark:bg-gray-700 mx-2" />
-              {/* CAMBIO: Si es reparto y cliente, muestra listbox de horarios */}
               {role === "cliente" && tipoEntrega === "reparto" && puedeReparto ? (
                 <select
                   className="border border-[#8F5400] dark:border-gray-700 rounded-lg px-2 py-2 bg-white dark:bg-gray-800"
@@ -365,7 +332,6 @@ export default function AgendarConfirmacion() {
 
           {/* Datos cliente */}
           {role === "cliente" ? (
-            // ----- VISTA CLIENTE: muestra datos actuales (solo lectura) -----
             <div className="border border-[#8F5400] dark:border-gray-800 rounded-xl p-4">
               <h2 className="font-semibold text-lg mb-3">Detalles Cliente</h2>
 
@@ -407,7 +373,6 @@ export default function AgendarConfirmacion() {
               )}
             </div>
           ) : (
-            // ----- VISTA PASAJERO (kiosco) O STAFF: datos de contacto -----
             <div className="border border-[#8F5400] dark:border-gray-800 rounded-xl p-4">
               <h2 className="font-semibold text-lg mb-3">Datos del cliente</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -452,11 +417,9 @@ export default function AgendarConfirmacion() {
             </div>
           )}
 
-          {/* Mensajes */}
           {error && <div className="text-red-600 text-sm">{error}</div>}
           {ok && <div className="text-green-600 text-sm">{ok}</div>}
 
-          {/* Aviso de aprobación para pasajero */}
           {requiereAprob && (
             <div className="border border-amber-600/40 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 text-sm">
               Este pedido necesita aprobación. Te avisaremos por correo cuando esté listo.
@@ -522,9 +485,7 @@ function ReadRow({ label, value }) {
   );
 }
 
-// Agrega esta función utilitaria al final del archivo:
 function getDiaSemana(ymd) {
-  // ymd: "YYYY-MM-DD"
   const dias = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
   const d = new Date(ymd);
   return dias[d.getDay()];
